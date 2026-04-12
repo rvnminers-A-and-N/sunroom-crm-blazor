@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SunroomCrm.Shared", "SunroomCrm.Shared\SunroomCrm.Shared.csproj", "{8DEBE5A3-59C8-426A-97AB-48798CFA7A0B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SunroomCrm.Blazor", "SunroomCrm.Blazor\SunroomCrm.Blazor.csproj", "{01E99D23-FB4B-420B-9860-B320AECF97A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SunroomCrm.Blazor.Client", "SunroomCrm.Blazor.Client\SunroomCrm.Blazor.Client.csproj", "{15DE8BB2-6434-48F1-9C0C-4D4BB9D7C654}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SunroomCrm.Blazor.Tests", "SunroomCrm.Blazor.Tests\SunroomCrm.Blazor.Tests.csproj", "{2EE217C3-A35E-41CF-8E77-7D123A93C9D6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SunroomCrm.Blazor.Tests.E2E", "SunroomCrm.Blazor.Tests.E2E\SunroomCrm.Blazor.Tests.E2E.csproj", "{665AC375-166C-4A5D-954A-E94490EE8809}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8DEBE5A3-59C8-426A-97AB-48798CFA7A0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DEBE5A3-59C8-426A-97AB-48798CFA7A0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DEBE5A3-59C8-426A-97AB-48798CFA7A0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DEBE5A3-59C8-426A-97AB-48798CFA7A0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01E99D23-FB4B-420B-9860-B320AECF97A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01E99D23-FB4B-420B-9860-B320AECF97A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01E99D23-FB4B-420B-9860-B320AECF97A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01E99D23-FB4B-420B-9860-B320AECF97A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15DE8BB2-6434-48F1-9C0C-4D4BB9D7C654}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15DE8BB2-6434-48F1-9C0C-4D4BB9D7C654}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15DE8BB2-6434-48F1-9C0C-4D4BB9D7C654}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15DE8BB2-6434-48F1-9C0C-4D4BB9D7C654}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EE217C3-A35E-41CF-8E77-7D123A93C9D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EE217C3-A35E-41CF-8E77-7D123A93C9D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EE217C3-A35E-41CF-8E77-7D123A93C9D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EE217C3-A35E-41CF-8E77-7D123A93C9D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{665AC375-166C-4A5D-954A-E94490EE8809}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{665AC375-166C-4A5D-954A-E94490EE8809}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{665AC375-166C-4A5D-954A-E94490EE8809}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{665AC375-166C-4A5D-954A-E94490EE8809}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
