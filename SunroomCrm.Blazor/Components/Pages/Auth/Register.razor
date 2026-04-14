@@ -1,0 +1,120 @@
+@page "/register"
+@using SunroomCrm.Shared.DTOs.Auth
+@inject NavigationManager Navigation
+
+<PageTitle>Register — Sunroom CRM</PageTitle>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="sidebar-brand" style="justify-content: center; border: none; padding: 0 0 1rem;">
+                <div class="brand-icon">S</div>
+                <span class="brand-text" style="color: var(--sunroom-gray-900);">Sunroom CRM</span>
+            </div>
+            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary" Style="margin-bottom: 1.5rem;">
+                Create your account
+            </MudText>
+        </div>
+
+        <EditForm Model="@_model" OnValidSubmit="HandleRegister" FormName="register">
+            <DataAnnotationsValidator />
+
+            <MudTextField @bind-Value="_model.Name"
+                          Label="Full Name"
+                          Variant="Variant.Outlined"
+                          FullWidth="true"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="_model.Email"
+                          Label="Email"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Email"
+                          FullWidth="true"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="_model.Password"
+                          Label="Password"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          FullWidth="true"
+                          Class="mb-4" />
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-3">@_error</MudAlert>
+            }
+
+            <MudButton ButtonType="ButtonType.Submit"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       Size="Size.Large"
+                       Disabled="@_loading">
+                @if (_loading) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+                Create Account
+            </MudButton>
+        </EditForm>
+
+        <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-4">
+            Already have an account?
+            <MudLink Href="/login" Color="Color.Primary">Sign in</MudLink>
+        </MudText>
+    </div>
+</div>
+
+<style>
+    .auth-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--sunroom-gray-50);
+    }
+    .auth-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 420px;
+        border: 1px solid var(--sunroom-gray-200);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    }
+</style>
+
+@code {
+    [SupplyParameterFromForm]
+    private RegisterRequest _model { get; set; } = new();
+
+    private string? _error;
+    private bool _loading;
+
+    private async Task HandleRegister()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            var http = new HttpClient { BaseAddress = new Uri(Navigation.BaseUri) };
+            var response = await http.PostAsJsonAsync("/api/account/register", _model);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/dashboard", forceLoad: true);
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+                _error = error?.GetValueOrDefault("message") ?? "Registration failed.";
+            }
+        }
+        catch
+        {
+            _error = "An error occurred. Please try again.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}
