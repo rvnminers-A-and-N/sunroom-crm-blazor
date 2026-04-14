@@ -1,0 +1,83 @@
+@page "/companies"
+@attribute [Authorize]
+@using SunroomCrm.Shared.DTOs.Companies
+@using SunroomCrm.Shared.DTOs.Common
+@inject ICompanyService CompanyService
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+
+<PageTitle>Companies — Sunroom CRM</PageTitle>
+
+<PageHeader Title="Companies" Subtitle="Manage your companies">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenCreateDialog">New Company</MudButton>
+    </Actions>
+</PageHeader>
+
+<MudPaper Elevation="0" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+    <MudToolBar Dense="true" Class="px-4">
+        <MudTextField @bind-Value="_search" Placeholder="Search companies..." Variant="Variant.Outlined"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                      Margin="Margin.Dense" Immediate="true" DebounceInterval="300"
+                      TextChanged="OnSearchChanged" Style="max-width: 300px;" />
+    </MudToolBar>
+
+    <MudTable T="CompanyDto" Items="@_companies" Loading="@_loading" Dense="true" Hover="true"
+              OnRowClick="@(args => Navigation.NavigateTo($"/companies/{args.Item!.Id}"))">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Industry</MudTh>
+            <MudTh>Location</MudTh>
+            <MudTh>Contacts</MudTh>
+            <MudTh>Deals</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@context.Industry</MudTd>
+            <MudTd>@context.City@(context.State != null ? $", {context.State}" : "")</MudTd>
+            <MudTd>@context.ContactCount</MudTd>
+            <MudTd>@context.DealCount</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <EmptyState Icon="@Icons.Material.Filled.Business" Title="No companies found"
+                        Description="Create your first company to get started." />
+        </NoRecordsContent>
+    </MudTable>
+
+    @if (_totalPages > 1)
+    {
+        <div style="display: flex; justify-content: center; padding: 1rem;">
+            <MudPagination Count="@_totalPages" Selected="@_page" SelectedChanged="OnPageChanged" Color="Color.Primary" />
+        </div>
+    }
+</MudPaper>
+
+@code {
+    private List<CompanyDto> _companies = new();
+    private bool _loading = true;
+    private string? _search;
+    private int _page = 1;
+    private int _totalPages = 1;
+
+    protected override async Task OnInitializedAsync() => await LoadCompanies();
+
+    private async Task LoadCompanies()
+    {
+        _loading = true;
+        var result = await CompanyService.GetAllAsync(_search, new PaginationParams { Page = _page, PerPage = 25 });
+        _companies = result.Data;
+        _totalPages = result.Meta.LastPage;
+        _loading = false;
+    }
+
+    private async Task OnSearchChanged(string value) { _search = value; _page = 1; await LoadCompanies(); }
+    private async Task OnPageChanged(int page) { _page = page; await LoadCompanies(); }
+
+    private async Task OpenCreateDialog()
+    {
+        var dialog = await DialogService.ShowAsync<CompanyFormDialog>("New Company");
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled) await LoadCompanies();
+    }
+}

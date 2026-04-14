@@ -1,0 +1,40 @@
+@using SunroomCrm.Shared.DTOs.Companies
+@inject ICompanyService CompanyService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12"><MudTextField @bind-Value="_model.Name" Label="Company Name" Variant="Variant.Outlined" Required="true" /></MudItem>
+            <MudItem xs="6"><MudTextField @bind-Value="_model.Industry" Label="Industry" Variant="Variant.Outlined" /></MudItem>
+            <MudItem xs="6"><MudTextField @bind-Value="_model.Website" Label="Website" Variant="Variant.Outlined" /></MudItem>
+            <MudItem xs="6"><MudTextField @bind-Value="_model.Phone" Label="Phone" Variant="Variant.Outlined" /></MudItem>
+            <MudItem xs="6"><MudTextField @bind-Value="_model.Address" Label="Address" Variant="Variant.Outlined" /></MudItem>
+            <MudItem xs="4"><MudTextField @bind-Value="_model.City" Label="City" Variant="Variant.Outlined" /></MudItem>
+            <MudItem xs="4"><MudTextField @bind-Value="_model.State" Label="State" Variant="Variant.Outlined" /></MudItem>
+            <MudItem xs="4"><MudTextField @bind-Value="_model.Zip" Label="Zip" Variant="Variant.Outlined" /></MudItem>
+            <MudItem xs="12"><MudTextField @bind-Value="_model.Notes" Label="Notes" Variant="Variant.Outlined" Lines="3" /></MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Default">Cancel</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+    private CreateCompanyRequest _model = new();
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        try
+        {
+            await CompanyService.CreateAsync(_model);
+            Snackbar.Add("Company created!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+}
