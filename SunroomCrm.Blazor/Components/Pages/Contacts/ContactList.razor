@@ -1,0 +1,104 @@
+@page "/contacts"
+@attribute [Authorize]
+@using SunroomCrm.Shared.DTOs.Contacts
+@using SunroomCrm.Shared.DTOs.Tags
+@inject IContactService ContactService
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+
+<PageTitle>Contacts — Sunroom CRM</PageTitle>
+
+<PageHeader Title="Contacts" Subtitle="Manage your contacts">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenCreateDialog">New Contact</MudButton>
+    </Actions>
+</PageHeader>
+
+<MudPaper Elevation="0" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+    <MudToolBar Dense="true" Class="px-4">
+        <MudTextField @bind-Value="_search" Placeholder="Search contacts..." Variant="Variant.Outlined"
+                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                      Margin="Margin.Dense" Immediate="true" DebounceInterval="300"
+                      TextChanged="OnSearchChanged" Style="max-width: 300px;" />
+    </MudToolBar>
+
+    <MudTable T="ContactDto" Items="@_contacts" Loading="@_loading" Dense="true" Hover="true"
+              OnRowClick="@(args => Navigation.NavigateTo($"/contacts/{args.Item!.Id}"))">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Email</MudTh>
+            <MudTh>Company</MudTh>
+            <MudTh>Tags</MudTh>
+            <MudTh>Created</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.FirstName @context.LastName</MudTd>
+            <MudTd>@context.Email</MudTd>
+            <MudTd>@context.CompanyName</MudTd>
+            <MudTd>
+                @foreach (var tag in context.Tags.Take(3))
+                {
+                    <TagChip Tag="tag" />
+                }
+            </MudTd>
+            <MudTd>@context.CreatedAt.ToString("MMM d, yyyy")</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <EmptyState Icon="@Icons.Material.Filled.People" Title="No contacts found"
+                        Description="Create your first contact to get started." />
+        </NoRecordsContent>
+    </MudTable>
+
+    @if (_totalPages > 1)
+    {
+        <div style="display: flex; justify-content: center; padding: 1rem;">
+            <MudPagination Count="@_totalPages" Selected="@_page" SelectedChanged="OnPageChanged"
+                           Color="Color.Primary" />
+        </div>
+    }
+</MudPaper>
+
+@code {
+    private List<ContactDto> _contacts = new();
+    private bool _loading = true;
+    private string? _search;
+    private int _page = 1;
+    private int _totalPages = 1;
+
+    protected override async Task OnInitializedAsync() => await LoadContacts();
+
+    private async Task LoadContacts()
+    {
+        _loading = true;
+        var result = await ContactService.GetAllAsync(new ContactFilterParams
+        {
+            Page = _page,
+            PerPage = 25,
+            Search = _search
+        });
+        _contacts = result.Data;
+        _totalPages = result.Meta.LastPage;
+        _loading = false;
+    }
+
+    private async Task OnSearchChanged(string value)
+    {
+        _search = value;
+        _page = 1;
+        await LoadContacts();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _page = page;
+        await LoadContacts();
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var dialog = await DialogService.ShowAsync<ContactFormDialog>("New Contact");
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled) await LoadContacts();
+    }
+}
