@@ -1,0 +1,79 @@
+@page "/deals"
+@attribute [Authorize]
+@using SunroomCrm.Shared.DTOs.Deals
+@inject IDealService DealService
+@inject IDialogService DialogService
+@inject NavigationManager Navigation
+
+<PageTitle>Deals — Sunroom CRM</PageTitle>
+
+<PageHeader Title="Deals" Subtitle="Track your sales pipeline">
+    <Actions>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/deals/pipeline" StartIcon="@Icons.Material.Filled.ViewKanban" Class="mr-2">Pipeline View</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">New Deal</MudButton>
+    </Actions>
+</PageHeader>
+
+<MudPaper Elevation="0" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+    <MudTable T="DealDto" Items="@_deals" Loading="@_loading" Dense="true" Hover="true"
+              OnRowClick="@(args => Navigation.NavigateTo($"/deals/{args.Item!.Id}"))">
+        <HeaderContent>
+            <MudTh>Title</MudTh>
+            <MudTh>Value</MudTh>
+            <MudTh>Stage</MudTh>
+            <MudTh>Contact</MudTh>
+            <MudTh>Expected Close</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Title</MudTd>
+            <MudTd>@context.Value.ToString("C0")</MudTd>
+            <MudTd><MudChip T="string" Size="Size.Small" Color="@GetStageColor(context.Stage)">@context.Stage</MudChip></MudTd>
+            <MudTd>@context.ContactName</MudTd>
+            <MudTd>@(context.ExpectedCloseDate?.ToString("MMM d, yyyy") ?? "—")</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <EmptyState Icon="@Icons.Material.Filled.Handshake" Title="No deals found" Description="Create your first deal to start tracking." />
+        </NoRecordsContent>
+    </MudTable>
+
+    @if (_totalPages > 1)
+    {
+        <div style="display: flex; justify-content: center; padding: 1rem;">
+            <MudPagination Count="@_totalPages" Selected="@_page" SelectedChanged="OnPageChanged" Color="Color.Primary" />
+        </div>
+    }
+</MudPaper>
+
+@code {
+    private List<DealDto> _deals = new();
+    private bool _loading = true;
+    private int _page = 1;
+    private int _totalPages = 1;
+
+    protected override async Task OnInitializedAsync() => await LoadDeals();
+
+    private async Task LoadDeals()
+    {
+        _loading = true;
+        var result = await DealService.GetAllAsync(new DealFilterParams { Page = _page, PerPage = 25 });
+        _deals = result.Data;
+        _totalPages = result.Meta.LastPage;
+        _loading = false;
+    }
+
+    private async Task OnPageChanged(int page) { _page = page; await LoadDeals(); }
+
+    private async Task OpenCreateDialog()
+    {
+        var dialog = await DialogService.ShowAsync<DealFormDialog>("New Deal");
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled) await LoadDeals();
+    }
+
+    private static Color GetStageColor(string stage) => stage switch
+    {
+        "Lead" => Color.Default, "Qualified" => Color.Info, "Proposal" => Color.Warning,
+        "Negotiation" => Color.Secondary, "Won" => Color.Success, "Lost" => Color.Error,
+        _ => Color.Default
+    };
+}
