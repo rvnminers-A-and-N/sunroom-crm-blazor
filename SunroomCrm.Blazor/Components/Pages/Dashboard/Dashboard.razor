@@ -1,0 +1,105 @@
+@page "/dashboard"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@using SunroomCrm.Shared.DTOs.Dashboard
+@inject IDashboardService DashboardService
+
+<PageTitle>Dashboard — Sunroom CRM</PageTitle>
+
+<div class="gradient-banner mb-6">
+    <h2>Welcome back!</h2>
+    <p>Here's what's happening with your CRM today.</p>
+</div>
+
+@if (_dashboard != null)
+{
+    <MudGrid Class="mb-6">
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Label="Total Contacts" Value="@_dashboard.TotalContacts.ToString("N0")" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Label="Total Companies" Value="@_dashboard.TotalCompanies.ToString("N0")" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Label="Pipeline Value" Value="@_dashboard.TotalPipelineValue.ToString("C0")" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <StatCard Label="Won Revenue" Value="@_dashboard.WonRevenue.ToString("C0")" />
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid>
+        <MudItem xs="12" md="7">
+            <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+                <MudText Typo="Typo.h6" Class="mb-3">Deal Pipeline</MudText>
+                <MudChart ChartType="ChartType.Bar"
+                          ChartSeries="@_chartSeries"
+                          XAxisLabels="@_chartLabels"
+                          Width="100%" Height="300px"
+                          ChartOptions="@(new ChartOptions { YAxisTicks = 1 })" />
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="5">
+            <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+                <MudText Typo="Typo.h6" Class="mb-3">Recent Activity</MudText>
+                @if (_dashboard.RecentActivities.Any())
+                {
+                    <MudList T="RecentActivityDto" Dense="true">
+                        @foreach (var activity in _dashboard.RecentActivities.Take(8))
+                        {
+                            <MudListItem>
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <div class="activity-icon @activity.Type.ToLower()">
+                                        <MudIcon Icon="@GetActivityIcon(activity.Type)" Style="font-size: 0.875rem;" />
+                                    </div>
+                                    <div style="flex: 1; min-width: 0;">
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@activity.Subject</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                            @activity.ContactName · @activity.OccurredAt.ToString("MMM d")
+                                        </MudText>
+                                    </div>
+                                </div>
+                            </MudListItem>
+                        }
+                    </MudList>
+                }
+                else
+                {
+                    <EmptyState Icon="@Icons.Material.Filled.EventNote"
+                                Title="No recent activity"
+                                Description="Activities will appear here as you use the CRM." />
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+else
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+
+@code {
+    private DashboardDto? _dashboard;
+    private List<ChartSeries> _chartSeries = new();
+    private string[] _chartLabels = Array.Empty<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _dashboard = await DashboardService.GetDashboardAsync();
+
+        _chartLabels = _dashboard.DealsByStage.Select(s => s.Stage).ToArray();
+        _chartSeries = new List<ChartSeries>
+        {
+            new() { Name = "Deals", Data = _dashboard.DealsByStage.Select(s => (double)s.Count).ToArray() }
+        };
+    }
+
+    private static string GetActivityIcon(string type) => type.ToLower() switch
+    {
+        "call" => Icons.Material.Filled.Phone,
+        "email" => Icons.Material.Filled.Email,
+        "meeting" => Icons.Material.Filled.Groups,
+        "task" => Icons.Material.Filled.CheckCircle,
+        _ => Icons.Material.Filled.Note
+    };
+}
