@@ -1,0 +1,114 @@
+@page "/contacts/{Id:int}"
+@attribute [Authorize]
+@using SunroomCrm.Shared.DTOs.Contacts
+@inject IContactService ContactService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Contact Detail — Sunroom CRM</PageTitle>
+
+@if (_contact != null)
+{
+    <PageHeader Title="@($"{_contact.FirstName} {_contact.LastName}")" Subtitle="@_contact.Title">
+        <Actions>
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete"
+                       OnClick="Delete" Class="mr-2">Delete</MudButton>
+        </Actions>
+    </PageHeader>
+
+    <MudGrid>
+        <MudItem xs="12" md="8">
+            <MudPaper Elevation="0" Class="pa-4 mb-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+                <MudText Typo="Typo.h6" Class="mb-3">Details</MudText>
+                <MudGrid>
+                    <MudItem xs="6"><MudText Typo="Typo.caption" Color="Color.Secondary">Email</MudText><MudText>@(_contact.Email ?? "—")</MudText></MudItem>
+                    <MudItem xs="6"><MudText Typo="Typo.caption" Color="Color.Secondary">Phone</MudText><MudText>@(_contact.Phone ?? "—")</MudText></MudItem>
+                    <MudItem xs="6"><MudText Typo="Typo.caption" Color="Color.Secondary">Company</MudText><MudText>@(_contact.Company?.Name ?? "—")</MudText></MudItem>
+                    <MudItem xs="6"><MudText Typo="Typo.caption" Color="Color.Secondary">Last Contacted</MudText><MudText>@(_contact.LastContactedAt?.ToString("MMM d, yyyy") ?? "Never")</MudText></MudItem>
+                </MudGrid>
+                @if (!string.IsNullOrEmpty(_contact.Notes))
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-3">Notes</MudText>
+                    <MudText>@_contact.Notes</MudText>
+                }
+            </MudPaper>
+
+            @if (_contact.Activities.Any())
+            {
+                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+                    <MudText Typo="Typo.h6" Class="mb-3">Activities</MudText>
+                    <MudTimeline TimelinePosition="TimelinePosition.Start">
+                        @foreach (var activity in _contact.Activities.Take(10))
+                        {
+                            <MudTimelineItem Color="Color.Primary" Size="Size.Small">
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;">@activity.Subject</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@activity.Type · @activity.OccurredAt.ToString("MMM d, yyyy")</MudText>
+                            </MudTimelineItem>
+                        }
+                    </MudTimeline>
+                </MudPaper>
+            }
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="0" Class="pa-4 mb-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+                <MudText Typo="Typo.h6" Class="mb-3">Tags</MudText>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    @foreach (var tag in _contact.Tags)
+                    {
+                        <TagChip Tag="tag" />
+                    }
+                    @if (!_contact.Tags.Any())
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">No tags</MudText>
+                    }
+                </div>
+            </MudPaper>
+
+            @if (_contact.Deals.Any())
+            {
+                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+                    <MudText Typo="Typo.h6" Class="mb-3">Deals</MudText>
+                    @foreach (var deal in _contact.Deals)
+                    {
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" FullWidth="true"
+                                   Href="@($"/deals/{deal.Id}")" Style="justify-content: flex-start; text-transform: none;">
+                            @deal.Title — @deal.Value.ToString("C0")
+                        </MudButton>
+                    }
+                </MudPaper>
+            }
+        </MudItem>
+    </MudGrid>
+}
+else
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private ContactDetailDto? _contact;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _contact = await ContactService.GetByIdAsync(Id);
+    }
+
+    private async Task Delete()
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Message, $"Delete {_contact?.FirstName} {_contact?.LastName}?" }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirm Delete", parameters);
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled)
+        {
+            await ContactService.DeleteAsync(Id);
+            Snackbar.Add("Contact deleted.", Severity.Success);
+            Navigation.NavigateTo("/contacts");
+        }
+    }
+}
