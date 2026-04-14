@@ -1,0 +1,77 @@
+@page "/ai"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@using SunroomCrm.Shared.DTOs.AI
+@inject IAiService AiService
+@inject ISnackbar Snackbar
+
+<PageTitle>AI Panel — Sunroom CRM</PageTitle>
+
+<PageHeader Title="AI Panel" Subtitle="Powered by AI to help you sell smarter" />
+
+<MudGrid>
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+            <MudText Typo="Typo.h6" Class="mb-3">Summarize Text</MudText>
+            <MudTextField @bind-Value="_summarizeText" Label="Enter text to summarize" Variant="Variant.Outlined" Lines="4" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="Summarize"
+                       Disabled="@(string.IsNullOrWhiteSpace(_summarizeText) || _summarizing)">
+                @if (_summarizing) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+                Summarize
+            </MudButton>
+            @if (!string.IsNullOrEmpty(_summaryResult))
+            {
+                <MudAlert Severity="Severity.Info" Class="mt-3">@_summaryResult</MudAlert>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+            <MudText Typo="Typo.h6" Class="mb-3">Smart Search</MudText>
+            <MudTextField @bind-Value="_searchQuery" Label="Ask a question about your data" Variant="Variant.Outlined" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="SmartSearch"
+                       Disabled="@(string.IsNullOrWhiteSpace(_searchQuery) || _searching)">
+                @if (_searching) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+                Search
+            </MudButton>
+            @if (_searchResponse != null)
+            {
+                <MudAlert Severity="Severity.Info" Class="mt-3">@_searchResponse.Interpretation</MudAlert>
+                <MudText Typo="Typo.body2" Class="mt-2">Found @_searchResponse.Contacts.Count contacts, @_searchResponse.Activities.Count activities</MudText>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private string? _summarizeText;
+    private string? _summaryResult;
+    private bool _summarizing;
+    private string? _searchQuery;
+    private SmartSearchResponse? _searchResponse;
+    private bool _searching;
+
+    private async Task Summarize()
+    {
+        _summarizing = true;
+        try
+        {
+            var result = await AiService.SummarizeAsync(new SummarizeRequest { Text = _summarizeText! });
+            _summaryResult = result.Summary;
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _summarizing = false; }
+    }
+
+    private async Task SmartSearch()
+    {
+        _searching = true;
+        try
+        {
+            _searchResponse = await AiService.SmartSearchAsync(new SmartSearchRequest { Query = _searchQuery! });
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _searching = false; }
+    }
+}

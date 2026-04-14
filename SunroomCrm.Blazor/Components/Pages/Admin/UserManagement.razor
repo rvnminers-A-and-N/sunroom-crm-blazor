@@ -1,0 +1,62 @@
+@page "/admin/users"
+@attribute [Authorize(Roles = "Admin")]
+@using SunroomCrm.Shared.DTOs.Auth
+@rendermode InteractiveServer
+@inject IUserService UserService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>User Management — Sunroom CRM</PageTitle>
+
+<PageHeader Title="User Management" Subtitle="Manage system users" />
+
+<MudPaper Elevation="0" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+    <MudTable T="UserDto" Items="@_users" Loading="@_loading" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Email</MudTh>
+            <MudTh>Role</MudTh>
+            <MudTh>Joined</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Name</MudTd>
+            <MudTd>@context.Email</MudTd>
+            <MudTd><MudChip T="string" Size="Size.Small" Color="@GetRoleColor(context.Role)">@context.Role</MudChip></MudTd>
+            <MudTd>@context.CreatedAt.ToString("MMM d, yyyy")</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                               OnClick="() => DeleteUser(context)" />
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private List<UserDto> _users = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _users = await UserService.GetAllAsync();
+        _loading = false;
+    }
+
+    private async Task DeleteUser(UserDto user)
+    {
+        var parameters = new DialogParameters<ConfirmDialog> { { x => x.Message, $"Delete user {user.Name}?" } };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirm Delete", parameters);
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled)
+        {
+            await UserService.DeleteAsync(user.Id);
+            _users.Remove(user);
+            Snackbar.Add("User deleted.", Severity.Success);
+        }
+    }
+
+    private static Color GetRoleColor(string role) => role switch
+    {
+        "Admin" => Color.Error, "Manager" => Color.Warning, _ => Color.Default
+    };
+}
