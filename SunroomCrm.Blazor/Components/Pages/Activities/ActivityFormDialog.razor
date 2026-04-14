@@ -1,0 +1,42 @@
+@using SunroomCrm.Shared.DTOs.Activities
+@inject IActivityService ActivityService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudSelect @bind-Value="_model.Type" Label="Type" Variant="Variant.Outlined" Required="true">
+                    <MudSelectItem Value="@("Note")">Note</MudSelectItem>
+                    <MudSelectItem Value="@("Call")">Call</MudSelectItem>
+                    <MudSelectItem Value="@("Email")">Email</MudSelectItem>
+                    <MudSelectItem Value="@("Meeting")">Meeting</MudSelectItem>
+                    <MudSelectItem Value="@("Task")">Task</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12"><MudTextField @bind-Value="_model.Subject" Label="Subject" Variant="Variant.Outlined" Required="true" /></MudItem>
+            <MudItem xs="12"><MudTextField @bind-Value="_model.Body" Label="Body" Variant="Variant.Outlined" Lines="4" /></MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Default">Cancel</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+    private CreateActivityRequest _model = new();
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        try
+        {
+            await ActivityService.CreateAsync(_model);
+            Snackbar.Add("Activity created!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+}

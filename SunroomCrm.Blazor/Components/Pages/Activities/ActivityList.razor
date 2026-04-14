@@ -1,0 +1,88 @@
+@page "/activities"
+@attribute [Authorize]
+@using SunroomCrm.Shared.DTOs.Activities
+@inject IActivityService ActivityService
+@inject IDialogService DialogService
+
+<PageTitle>Activities — Sunroom CRM</PageTitle>
+
+<PageHeader Title="Activities" Subtitle="Track all interactions">
+    <Actions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenCreateDialog">New Activity</MudButton>
+    </Actions>
+</PageHeader>
+
+<MudPaper Elevation="0" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+    <MudToolBar Dense="true" Class="px-4">
+        <MudSelect @bind-Value="_typeFilter" Label="Type" Variant="Variant.Outlined" Margin="Margin.Dense"
+                   Style="max-width: 200px;" TextChanged="_ => LoadActivities()">
+            <MudSelectItem Value="@((string?)null)">All Types</MudSelectItem>
+            <MudSelectItem Value="@("Note")">Note</MudSelectItem>
+            <MudSelectItem Value="@("Call")">Call</MudSelectItem>
+            <MudSelectItem Value="@("Email")">Email</MudSelectItem>
+            <MudSelectItem Value="@("Meeting")">Meeting</MudSelectItem>
+            <MudSelectItem Value="@("Task")">Task</MudSelectItem>
+        </MudSelect>
+    </MudToolBar>
+
+    <MudTable T="ActivityDto" Items="@_activities" Loading="@_loading" Dense="true" Hover="true">
+        <HeaderContent>
+            <MudTh>Type</MudTh>
+            <MudTh>Subject</MudTh>
+            <MudTh>Contact</MudTh>
+            <MudTh>Date</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd><div class="activity-icon @context.Type.ToLower()"><MudIcon Icon="@GetIcon(context.Type)" Style="font-size: 0.875rem;" /></div></MudTd>
+            <MudTd>@context.Subject</MudTd>
+            <MudTd>@context.ContactName</MudTd>
+            <MudTd>@context.OccurredAt.ToString("MMM d, yyyy")</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <EmptyState Icon="@Icons.Material.Filled.EventNote" Title="No activities found" Description="Log your first activity to get started." />
+        </NoRecordsContent>
+    </MudTable>
+
+    @if (_totalPages > 1)
+    {
+        <div style="display: flex; justify-content: center; padding: 1rem;">
+            <MudPagination Count="@_totalPages" Selected="@_page" SelectedChanged="OnPageChanged" Color="Color.Primary" />
+        </div>
+    }
+</MudPaper>
+
+@code {
+    private List<ActivityDto> _activities = new();
+    private bool _loading = true;
+    private string? _typeFilter;
+    private int _page = 1;
+    private int _totalPages = 1;
+
+    protected override async Task OnInitializedAsync() => await LoadActivities();
+
+    private async Task LoadActivities()
+    {
+        _loading = true;
+        var result = await ActivityService.GetAllAsync(new ActivityFilterParams { Page = _page, PerPage = 25, Type = _typeFilter });
+        _activities = result.Data;
+        _totalPages = result.Meta.LastPage;
+        _loading = false;
+    }
+
+    private async Task OnPageChanged(int page) { _page = page; await LoadActivities(); }
+
+    private async Task OpenCreateDialog()
+    {
+        var dialog = await DialogService.ShowAsync<ActivityFormDialog>("New Activity");
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled) await LoadActivities();
+    }
+
+    private static string GetIcon(string type) => type.ToLower() switch
+    {
+        "call" => Icons.Material.Filled.Phone, "email" => Icons.Material.Filled.Email,
+        "meeting" => Icons.Material.Filled.Groups, "task" => Icons.Material.Filled.CheckCircle,
+        _ => Icons.Material.Filled.Note
+    };
+}
