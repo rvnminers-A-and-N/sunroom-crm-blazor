@@ -1,0 +1,79 @@
+@page "/deals/pipeline"
+@attribute [Authorize]
+@rendermode InteractiveWebAssembly
+@using SunroomCrm.Shared.DTOs.Deals
+
+<PageTitle>Deal Pipeline — Sunroom CRM</PageTitle>
+
+<div class="page-header">
+    <div>
+        <MudText Typo="Typo.h4">Pipeline</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Drag deals between stages</MudText>
+    </div>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/deals" StartIcon="@Icons.Material.Filled.List">List View</MudButton>
+</div>
+
+@if (_pipeline != null)
+{
+    <MudDropContainer T="DealDto" Items="@_allDeals" ItemsSelector="@((item, zone) => item.Stage == zone)"
+                       ItemDropped="OnItemDropped" Class="d-flex gap-4" Style="overflow-x: auto; padding-bottom: 1rem;">
+        <ChildContent>
+            @foreach (var stage in _stages)
+            {
+                <MudPaper Elevation="0" Style="min-width: 280px; flex: 1; border: 1px solid var(--sunroom-gray-200); border-radius: 12px; background: var(--sunroom-gray-50);">
+                    <div style="padding: 1rem; border-bottom: 1px solid var(--sunroom-gray-200);">
+                        <MudText Typo="Typo.subtitle1" Style="font-weight: 600;">@stage</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @(_pipeline.Stages.FirstOrDefault(s => s.Stage == stage)?.Count ?? 0) deals ·
+                            @((_pipeline.Stages.FirstOrDefault(s => s.Stage == stage)?.TotalValue ?? 0).ToString("C0"))
+                        </MudText>
+                    </div>
+                    <MudDropZone T="DealDto" Identifier="@stage" Style="min-height: 200px; padding: 0.5rem;" />
+                </MudPaper>
+            }
+        </ChildContent>
+        <ItemRenderer>
+            <MudPaper Elevation="1" Class="pa-3 mb-2" Style="border-radius: 8px; cursor: grab;">
+                <MudText Typo="Typo.body2" Style="font-weight: 600;">@context.Title</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.ContactName</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Primary" Style="font-weight: 600;">@context.Value.ToString("C0")</MudText>
+            </MudPaper>
+        </ItemRenderer>
+    </MudDropContainer>
+}
+else
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+
+@code {
+    [Inject] private IDealService DealService { get; set; } = null!;
+
+    private PipelineDto? _pipeline;
+    private List<DealDto> _allDeals = new();
+    private readonly string[] _stages = { "Lead", "Qualified", "Proposal", "Negotiation", "Won", "Lost" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pipeline = await DealService.GetPipelineAsync();
+        _allDeals = _pipeline.Stages.SelectMany(s => s.Deals).ToList();
+    }
+
+    private async Task OnItemDropped(MudItemDropInfo<DealDto> info)
+    {
+        if (info.Item == null || info.DropzoneIdentifier == info.Item.Stage) return;
+
+        var request = new UpdateDealRequest
+        {
+            Title = info.Item.Title,
+            Value = info.Item.Value,
+            ContactId = info.Item.ContactId,
+            CompanyId = info.Item.CompanyId,
+            Stage = info.DropzoneIdentifier,
+            ExpectedCloseDate = info.Item.ExpectedCloseDate
+        };
+
+        info.Item.Stage = info.DropzoneIdentifier;
+        await DealService.UpdateAsync(info.Item.Id, request);
+    }
+}
