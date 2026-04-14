@@ -1,23 +1,60 @@
 @inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<MudLayout>
+    <MudAppBar Elevation="0" Style="border-bottom: 1px solid var(--sunroom-gray-200);">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start"
+                       OnClick="@ToggleDrawer" />
+        <MudSpacer />
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.body2" Class="mr-3">@context.User.Identity?.Name</MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit"
+                               OnClick="@Logout" />
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="0" Variant="DrawerVariant.Mini"
+               OpenMiniOnHover="false" ClipMode="DrawerClipMode.Always">
+        <div class="sidebar-brand">
+            <div class="brand-icon">S</div>
+            @if (_drawerOpen)
+            {
+                <span class="brand-text">Sunroom CRM</span>
+            }
         </div>
+        <MudNavMenu>
+            <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard" Match="NavLinkMatch.All">Dashboard</MudNavLink>
+            <MudNavLink Href="/contacts" Icon="@Icons.Material.Filled.People">Contacts</MudNavLink>
+            <MudNavLink Href="/companies" Icon="@Icons.Material.Filled.Business">Companies</MudNavLink>
+            <MudNavLink Href="/deals" Icon="@Icons.Material.Filled.Handshake">Deals</MudNavLink>
+            <MudNavLink Href="/deals/pipeline" Icon="@Icons.Material.Filled.ViewKanban">Pipeline</MudNavLink>
+            <MudNavLink Href="/activities" Icon="@Icons.Material.Filled.EventNote">Activities</MudNavLink>
+            <MudNavLink Href="/ai" Icon="@Icons.Material.Filled.AutoAwesome">AI Panel</MudNavLink>
+            <MudDivider Class="my-2" />
+            <MudNavLink Href="/settings/profile" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
+            <AuthorizeView Roles="Admin">
+                <MudNavLink Href="/admin/users" Icon="@Icons.Material.Filled.AdminPanelSettings">Admin</MudNavLink>
+            </AuthorizeView>
+        </MudNavMenu>
+    </MudDrawer>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+    <MudMainContent Style="padding: 1.5rem;">
+        @Body
+    </MudMainContent>
+</MudLayout>
 
-<div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
-</div>
+@code {
+    private bool _drawerOpen = true;
+
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    private async Task Logout()
+    {
+        var http = new HttpClient { BaseAddress = new Uri(Navigation.BaseUri) };
+        await http.PostAsync("/api/account/logout", null);
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}
