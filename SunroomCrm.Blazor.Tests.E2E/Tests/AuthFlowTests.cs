@@ -34,9 +34,12 @@ public class AuthFlowTests
         await page.GotoAsync($"{_fixture.BaseUrl}/login");
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        await page.GetByLabel("Email").FillAsync("wrong@example.com");
-        await page.GetByLabel("Password").FillAsync("wrongpassword");
-        await page.GetByRole(AriaRole.Button, new() { Name = "Sign In" }).ClickAsync();
+        var emailInput = page.Locator("input[type='email']");
+        await emailInput.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+
+        await emailInput.FillAsync("wrong@example.com");
+        await page.Locator("input[type='password']").FillAsync("wrongpassword");
+        await page.Locator("button[type='submit']").ClickAsync();
 
         // Should stay on login page with error
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
@@ -54,13 +57,15 @@ public class AuthFlowTests
         await page.GotoAsync($"{_fixture.BaseUrl}/register");
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        await page.GetByLabel("Full Name").FillAsync("E2E Test User");
-        await page.GetByLabel("Email").FillAsync(uniqueEmail);
-        await page.GetByLabel("Password", new() { Exact = true }).FillAsync("Test123!");
-        await page.GetByLabel("Confirm Password").FillAsync("Test123!");
-        await page.GetByRole(AriaRole.Button, new() { Name = "Create Account" }).ClickAsync();
+        var nameInput = page.Locator("input[type='text']").First;
+        await nameInput.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
 
-        await page.WaitForURLAsync("**/dashboard**", new() { Timeout = 10000 });
+        await nameInput.FillAsync("E2E Test User");
+        await page.Locator("input[type='email']").FillAsync(uniqueEmail);
+        await page.Locator("input[type='password']").FillAsync("Test123!");
+        await page.Locator("button[type='submit']").ClickAsync();
+
+        await page.WaitForURLAsync("**/dashboard**", new() { Timeout = 15000 });
         page.Url.Should().Contain("/dashboard");
     }
 
@@ -73,7 +78,8 @@ public class AuthFlowTests
         await page.GotoAsync($"{_fixture.BaseUrl}/register");
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        var loginLink = page.GetByRole(AriaRole.Link, new() { Name = "Sign in" });
+        var loginLink = page.Locator("a[href='/login']");
+        await loginLink.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         (await loginLink.IsVisibleAsync()).Should().BeTrue();
     }
 
@@ -86,7 +92,8 @@ public class AuthFlowTests
         await page.GotoAsync($"{_fixture.BaseUrl}/login");
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        var registerLink = page.GetByRole(AriaRole.Link, new() { Name = "Create one" });
+        var registerLink = page.Locator("a[href='/register']");
+        await registerLink.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         (await registerLink.IsVisibleAsync()).Should().BeTrue();
     }
 }

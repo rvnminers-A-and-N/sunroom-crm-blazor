@@ -83,4 +83,21 @@ public class ServiceRegistrationTests
         services.Should().Contain(s => s.ServiceType == typeof(IAuthService)
             && s.ImplementationType == typeof(LocalAuthService));
     }
+
+    [Fact]
+    public void AddDataServices_ApiMode_NoBaseUrl_UsesDefault()
+    {
+        var services = new ServiceCollection();
+        services.AddHttpContextAccessor();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["DataMode"] = "Api"
+            })
+            .Build();
+
+        services.AddDataServices(config);
+
+        services.Should().Contain(s => s.ServiceType == typeof(JwtDelegatingHandler));
+    }
 }

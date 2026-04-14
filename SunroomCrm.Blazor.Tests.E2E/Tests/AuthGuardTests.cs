@@ -72,7 +72,8 @@ public class AuthGuardTests
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         page.Url.Should().Contain("/login");
-        var signInButton = page.GetByRole(AriaRole.Button, new() { Name = "Sign In" });
+        var signInButton = page.Locator("button[type='submit']");
+        await signInButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         (await signInButton.IsVisibleAsync()).Should().BeTrue();
     }
 }

@@ -21,6 +21,24 @@
     <Routes @rendermode="InteractiveServer" />
     <script src="_framework/blazor.web.js"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script>
+        window.postLogin = async function (email, password) {
+            const r = await fetch('/api/account/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            return r.ok;
+        };
+        window.postRegister = async function (name, email, password) {
+            const r = await fetch('/api/account/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password })
+            });
+            return r.ok;
+        };
+    </script>
 </body>
 
 </html>

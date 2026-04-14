@@ -37,7 +37,8 @@ public class CrossBrowserTests
             "login page should render without console errors on {0}", browserType);
 
         // Key elements are visible
-        var signInButton = page.GetByRole(AriaRole.Button, new() { Name = "Sign In" });
+        var signInButton = page.Locator("button[type='submit']");
+        await signInButton.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         (await signInButton.IsVisibleAsync()).Should().BeTrue(
             "Sign In button should be visible on {0}", browserType);
     }

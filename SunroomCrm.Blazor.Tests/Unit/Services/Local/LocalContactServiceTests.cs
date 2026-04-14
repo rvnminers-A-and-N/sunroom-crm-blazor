@@ -229,4 +229,24 @@ public class LocalContactServiceTests
 
         await act.Should().ThrowAsync<KeyNotFoundException>();
     }
+
+    [Fact]
+    public async Task GetAllAsync_NullHttpContext_ThrowsUnauthorized()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalContactService(db, MockHttpContextAccessor.CreateWithNullContext());
+
+        var act = () => service.GetAllAsync(new ContactFilterParams());
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    [Fact]
+    public async Task GetAllAsync_NullUser_ThrowsUnauthorized()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalContactService(db, MockHttpContextAccessor.CreateWithNullUser());
+
+        var act = () => service.GetAllAsync(new ContactFilterParams());
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
 }

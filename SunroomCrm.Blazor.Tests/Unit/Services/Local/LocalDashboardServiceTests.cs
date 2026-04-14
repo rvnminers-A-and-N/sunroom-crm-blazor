@@ -87,4 +87,24 @@ public class LocalDashboardServiceTests
         result.RecentActivities.Should().ContainSingle()
             .Which.Subject.Should().Be("Test note");
     }
+
+    [Fact]
+    public async Task GetDashboardAsync_NullHttpContext_ThrowsUnauthorized()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalDashboardService(db, MockHttpContextAccessor.CreateWithNullContext());
+
+        var act = () => service.GetDashboardAsync();
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    [Fact]
+    public async Task GetDashboardAsync_NullUser_ThrowsUnauthorized()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalDashboardService(db, MockHttpContextAccessor.CreateWithNullUser());
+
+        var act = () => service.GetDashboardAsync();
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
 }

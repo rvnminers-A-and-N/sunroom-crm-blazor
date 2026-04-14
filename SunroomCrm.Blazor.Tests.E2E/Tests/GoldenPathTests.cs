@@ -26,13 +26,15 @@ public class GoldenPathTests
         await page.GotoAsync($"{_fixture.BaseUrl}/register");
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        await page.GetByLabel("Full Name").FillAsync("Golden Path User");
-        await page.GetByLabel("Email").FillAsync(uniqueEmail);
-        await page.GetByLabel("Password", new() { Exact = true }).FillAsync("Test123!");
-        await page.GetByLabel("Confirm Password").FillAsync("Test123!");
-        await page.GetByRole(AriaRole.Button, new() { Name = "Create Account" }).ClickAsync();
+        var nameInput = page.Locator("input[type='text']").First;
+        await nameInput.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
 
-        await page.WaitForURLAsync("**/dashboard**", new() { Timeout = 10000 });
+        await nameInput.FillAsync("Golden Path User");
+        await page.Locator("input[type='email']").FillAsync(uniqueEmail);
+        await page.Locator("input[type='password']").FillAsync("Test123!");
+        await page.Locator("button[type='submit']").ClickAsync();
+
+        await page.WaitForURLAsync("**/dashboard**", new() { Timeout = 15000 });
         page.Url.Should().Contain("/dashboard");
 
         // 2. Navigate to contacts

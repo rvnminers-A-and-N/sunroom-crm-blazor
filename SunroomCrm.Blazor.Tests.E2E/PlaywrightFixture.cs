@@ -110,17 +110,21 @@ public class PlaywrightFixture : IAsyncLifetime
         });
     }
 
-    public async Task<IPage> LoginAsync(IPage page, string email = "admin@sunroom.dev", string password = "Admin123!")
+    public async Task<IPage> LoginAsync(IPage page, string email = "admin@sunroomcrm.com", string password = "password123")
     {
         await page.GotoAsync($"{BaseUrl}/login");
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        await page.GetByLabel("Email").FillAsync(email);
-        await page.GetByLabel("Password").FillAsync(password);
-        await page.GetByRole(AriaRole.Button, new() { Name = "Sign In" }).ClickAsync();
+        // Wait for Blazor InteractiveServer to fully render the form
+        var emailInput = page.Locator("input[type='email']");
+        await emailInput.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+
+        await emailInput.FillAsync(email);
+        await page.Locator("input[type='password']").FillAsync(password);
+        await page.Locator("button[type='submit']").ClickAsync();
 
         await page.WaitForURLAsync($"**/dashboard**",
-            new() { Timeout = 10000 });
+            new() { Timeout = 15000 });
 
         return page;
     }

@@ -1,7 +1,7 @@
 @page "/login"
 @using SunroomCrm.Shared.DTOs.Auth
 @inject NavigationManager Navigation
-@inject IHttpContextAccessor HttpContextAccessor
+@inject IJSRuntime JS
 
 <PageTitle>Login — Sunroom CRM</PageTitle>
 
@@ -90,10 +90,9 @@
 
         try
         {
-            var http = new HttpClient { BaseAddress = new Uri(Navigation.BaseUri) };
-            var response = await http.PostAsJsonAsync("/api/account/login", _model);
+            var ok = await JS.InvokeAsync<bool>("postLogin", _model.Email, _model.Password);
 
-            if (response.IsSuccessStatusCode)
+            if (ok)
             {
                 Navigation.NavigateTo("/dashboard", forceLoad: true);
             }

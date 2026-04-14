@@ -118,4 +118,24 @@ public class LocalAiServiceTests
 
         await act.Should().ThrowAsync<KeyNotFoundException>().WithMessage("*999*");
     }
+
+    [Fact]
+    public async Task SmartSearchAsync_NullHttpContext_ThrowsUnauthorized()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalAiService(db, MockHttpContextAccessor.CreateWithNullContext());
+
+        var act = () => service.SmartSearchAsync(new SmartSearchRequest { Query = "test" });
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    [Fact]
+    public async Task SmartSearchAsync_NullUser_ThrowsUnauthorized()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalAiService(db, MockHttpContextAccessor.CreateWithNullUser());
+
+        var act = () => service.SmartSearchAsync(new SmartSearchRequest { Query = "test" });
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
 }

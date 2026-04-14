@@ -137,4 +137,24 @@ public class LocalActivityServiceTests
 
         await act.Should().ThrowAsync<KeyNotFoundException>();
     }
+
+    [Fact]
+    public async Task GetAllAsync_NullHttpContext_ThrowsUnauthorized()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalActivityService(db, MockHttpContextAccessor.CreateWithNullContext());
+
+        var act = () => service.GetAllAsync(new ActivityFilterParams());
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    [Fact]
+    public async Task GetAllAsync_NullUser_ThrowsUnauthorized()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalActivityService(db, MockHttpContextAccessor.CreateWithNullUser());
+
+        var act = () => service.GetAllAsync(new ActivityFilterParams());
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
 }

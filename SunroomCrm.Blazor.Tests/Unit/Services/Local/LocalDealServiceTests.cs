@@ -158,4 +158,24 @@ public class LocalDealServiceTests
         var proposalStage = result.Stages.First(s => s.Stage == "Proposal");
         proposalStage.TotalValue.Should().Be(50000);
     }
+
+    [Fact]
+    public async Task GetAllAsync_NullHttpContext_ThrowsUnauthorized()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalDealService(db, MockHttpContextAccessor.CreateWithNullContext());
+
+        var act = () => service.GetAllAsync(new DealFilterParams());
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    [Fact]
+    public async Task GetAllAsync_NullUser_ThrowsUnauthorized()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalDealService(db, MockHttpContextAccessor.CreateWithNullUser());
+
+        var act = () => service.GetAllAsync(new DealFilterParams());
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
 }

@@ -23,4 +23,20 @@ public static class MockHttpContextAccessor
         mock.Setup(x => x.HttpContext).Returns(httpContext);
         return mock.Object;
     }
+
+    public static IHttpContextAccessor CreateWithNullContext()
+    {
+        var mock = new Mock<IHttpContextAccessor>();
+        mock.Setup(x => x.HttpContext).Returns((HttpContext?)null);
+        return mock.Object;
+    }
+
+    public static IHttpContextAccessor CreateWithNullUser()
+    {
+        var context = new Mock<HttpContext>();
+        context.Setup(x => x.User).Returns((ClaimsPrincipal)null!);
+        var mock = new Mock<IHttpContextAccessor>();
+        mock.Setup(x => x.HttpContext).Returns(context.Object);
+        return mock.Object;
+    }
 }

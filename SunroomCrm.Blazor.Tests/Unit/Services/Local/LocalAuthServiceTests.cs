@@ -130,4 +130,24 @@ public class LocalAuthServiceTests
         result.Id.Should().Be(1);
         result.Email.Should().Be("admin@test.com");
     }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_NullHttpContext_ThrowsUnauthorized()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalAuthService(db, MockHttpContextAccessor.CreateWithNullContext());
+
+        var act = () => service.GetCurrentUserAsync();
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    [Fact]
+    public async Task GetCurrentUserAsync_NullUser_ThrowsUnauthorized()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalAuthService(db, MockHttpContextAccessor.CreateWithNullUser());
+
+        var act = () => service.GetCurrentUserAsync();
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
 }
