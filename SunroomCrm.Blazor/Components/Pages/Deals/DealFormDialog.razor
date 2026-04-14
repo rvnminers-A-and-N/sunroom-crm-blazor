@@ -1,0 +1,41 @@
+@using SunroomCrm.Shared.DTOs.Deals
+@inject IDealService DealService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12"><MudTextField @bind-Value="_model.Title" Label="Deal Title" Variant="Variant.Outlined" Required="true" /></MudItem>
+            <MudItem xs="6"><MudNumericField @bind-Value="_model.Value" Label="Value ($)" Variant="Variant.Outlined" Format="N2" /></MudItem>
+            <MudItem xs="6"><MudNumericField @bind-Value="_model.ContactId" Label="Contact ID" Variant="Variant.Outlined" /></MudItem>
+            <MudItem xs="6"><MudSelect @bind-Value="_model.Stage" Label="Stage" Variant="Variant.Outlined">
+                <MudSelectItem Value="@("Lead")">Lead</MudSelectItem>
+                <MudSelectItem Value="@("Qualified")">Qualified</MudSelectItem>
+                <MudSelectItem Value="@("Proposal")">Proposal</MudSelectItem>
+                <MudSelectItem Value="@("Negotiation")">Negotiation</MudSelectItem>
+            </MudSelect></MudItem>
+            <MudItem xs="12"><MudTextField @bind-Value="_model.Notes" Label="Notes" Variant="Variant.Outlined" Lines="3" /></MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Default">Cancel</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary" Variant="Variant.Filled">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+    private CreateDealRequest _model = new();
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        try
+        {
+            await DealService.CreateAsync(_model);
+            Snackbar.Add("Deal created!", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+    }
+}

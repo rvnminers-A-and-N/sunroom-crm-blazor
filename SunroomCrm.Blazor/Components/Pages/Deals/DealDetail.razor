@@ -1,0 +1,90 @@
+@page "/deals/{Id:int}"
+@attribute [Authorize]
+@using SunroomCrm.Shared.DTOs.Deals
+@inject IDealService DealService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Deal Detail — Sunroom CRM</PageTitle>
+
+@if (_deal != null)
+{
+    <PageHeader Title="@_deal.Title" Subtitle="@($"{_deal.Stage} · {_deal.Value:C0}")">
+        <Actions>
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" OnClick="Delete">Delete</MudButton>
+        </Actions>
+    </PageHeader>
+
+    <MudGrid>
+        <MudItem xs="12" md="8">
+            <MudPaper Elevation="0" Class="pa-4 mb-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+                <MudText Typo="Typo.h6" Class="mb-3">Details</MudText>
+                <MudGrid>
+                    <MudItem xs="6"><MudText Typo="Typo.caption" Color="Color.Secondary">Contact</MudText><MudLink Href="@($"/contacts/{_deal.ContactId}")">@_deal.ContactName</MudLink></MudItem>
+                    <MudItem xs="6"><MudText Typo="Typo.caption" Color="Color.Secondary">Company</MudText><MudText>@(_deal.CompanyName ?? "—")</MudText></MudItem>
+                    <MudItem xs="6"><MudText Typo="Typo.caption" Color="Color.Secondary">Expected Close</MudText><MudText>@(_deal.ExpectedCloseDate?.ToString("MMM d, yyyy") ?? "—")</MudText></MudItem>
+                    <MudItem xs="6"><MudText Typo="Typo.caption" Color="Color.Secondary">Closed At</MudText><MudText>@(_deal.ClosedAt?.ToString("MMM d, yyyy") ?? "—")</MudText></MudItem>
+                </MudGrid>
+                @if (!string.IsNullOrEmpty(_deal.Notes))
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-3">Notes</MudText>
+                    <MudText>@_deal.Notes</MudText>
+                }
+            </MudPaper>
+
+            @if (_deal.Activities.Any())
+            {
+                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+                    <MudText Typo="Typo.h6" Class="mb-3">Activities</MudText>
+                    <MudTimeline TimelinePosition="TimelinePosition.Start">
+                        @foreach (var a in _deal.Activities.Take(10))
+                        {
+                            <MudTimelineItem Color="Color.Primary" Size="Size.Small">
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;">@a.Subject</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@a.Type · @a.OccurredAt.ToString("MMM d")</MudText>
+                            </MudTimelineItem>
+                        }
+                    </MudTimeline>
+                </MudPaper>
+            }
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            @if (_deal.Insights.Any())
+            {
+                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+                    <MudText Typo="Typo.h6" Class="mb-3">AI Insights</MudText>
+                    @foreach (var insight in _deal.Insights)
+                    {
+                        <MudAlert Severity="Severity.Info" Class="mb-2" Dense="true">
+                            @insight.Insight
+                            <br /><MudText Typo="Typo.caption">@insight.GeneratedAt.ToString("MMM d, yyyy")</MudText>
+                        </MudAlert>
+                    }
+                </MudPaper>
+            }
+        </MudItem>
+    </MudGrid>
+}
+else { <MudProgressLinear Indeterminate="true" Color="Color.Primary" /> }
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private DealDetailDto? _deal;
+
+    protected override async Task OnInitializedAsync() { _deal = await DealService.GetByIdAsync(Id); }
+
+    private async Task Delete()
+    {
+        var parameters = new DialogParameters<ConfirmDialog> { { x => x.Message, $"Delete deal '{_deal?.Title}'?" } };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirm Delete", parameters);
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled)
+        {
+            await DealService.DeleteAsync(Id);
+            Snackbar.Add("Deal deleted.", Severity.Success);
+            Navigation.NavigateTo("/deals");
+        }
+    }
+}
