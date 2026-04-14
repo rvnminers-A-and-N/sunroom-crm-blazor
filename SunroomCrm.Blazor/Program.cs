@@ -1,10 +1,13 @@
 using SunroomCrm.Blazor.Components;
+using SunroomCrm.Blazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
+
+builder.Services.AddDataServices(builder.Configuration);
 
 var app = builder.Build();
 
