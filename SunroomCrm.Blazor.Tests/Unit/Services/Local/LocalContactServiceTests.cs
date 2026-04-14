@@ -184,4 +184,49 @@ public class LocalContactServiceTests
 
         result.Tags.Should().ContainSingle().Which.Name.Should().Be("Lead");
     }
+
+    [Fact]
+    public async Task GetAllAsync_WithTagFilter_FiltersResults()
+    {
+        var (service, db) = CreateService();
+        var contact = db.Contacts.First(c => c.Id == 1);
+        contact.Tags.Add(db.Tags.First(t => t.Id == 1));
+        await db.SaveChangesAsync();
+
+        var result = await service.GetAllAsync(new ContactFilterParams { TagId = 1 });
+
+        result.Data.Should().ContainSingle().Which.FirstName.Should().Be("John");
+    }
+
+    [Theory]
+    [InlineData("firstname", "asc")]
+    [InlineData("firstname", "desc")]
+    [InlineData("lastname", "asc")]
+    [InlineData("lastname", "desc")]
+    [InlineData("email", "asc")]
+    [InlineData("email", "desc")]
+    [InlineData("company", "asc")]
+    [InlineData("company", "desc")]
+    [InlineData(null, "asc")]
+    [InlineData(null, "desc")]
+    public async Task GetAllAsync_WithSorting_ReturnsResults(string? sort, string direction)
+    {
+        var (service, _) = CreateService();
+        var result = await service.GetAllAsync(new ContactFilterParams
+        {
+            Sort = sort,
+            Direction = direction
+        });
+
+        result.Data.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task SyncTagsAsync_NonExistent_ThrowsKeyNotFound()
+    {
+        var (service, _) = CreateService();
+        var act = () => service.SyncTagsAsync(999, new SyncTagsRequest { TagIds = new List<int> { 1 } });
+
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
 }

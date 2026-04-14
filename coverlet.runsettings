@@ -5,8 +5,9 @@
       <DataCollector friendlyName="XPlat code coverage">
         <Configuration>
           <Format>cobertura</Format>
+          <Include>[SunroomCrm.Blazor]*</Include>
+          <Exclude>[SunroomCrm.Blazor.Tests]*,[SunroomCrm.Blazor.Tests.E2E]*,[SunroomCrm.Blazor]SunroomCrm.Blazor.Data.Migrations.*,[SunroomCrm.Blazor]SunroomCrm.Blazor.Components.*,[SunroomCrm.Blazor]Program</Exclude>
           <ExcludeByFile>**/Migrations/**/*.cs</ExcludeByFile>
-          <Exclude>[SunroomCrm.Blazor.Tests]*,[SunroomCrm.Blazor.Tests.E2E]*,[SunroomCrm.Blazor]SunroomCrm.Blazor.Data.Migrations.*</Exclude>
           <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
           <SkipAutoProps>true</SkipAutoProps>
           <DeterministicReport>true</DeterministicReport>
