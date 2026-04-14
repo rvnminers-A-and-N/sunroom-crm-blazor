@@ -1,0 +1,89 @@
+@page "/companies/{Id:int}"
+@attribute [Authorize]
+@using SunroomCrm.Shared.DTOs.Companies
+@inject ICompanyService CompanyService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>Company Detail — Sunroom CRM</PageTitle>
+
+@if (_company != null)
+{
+    <PageHeader Title="@_company.Name" Subtitle="@_company.Industry">
+        <Actions>
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" OnClick="Delete">Delete</MudButton>
+        </Actions>
+    </PageHeader>
+
+    <MudGrid>
+        <MudItem xs="12" md="8">
+            <MudPaper Elevation="0" Class="pa-4 mb-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+                <MudText Typo="Typo.h6" Class="mb-3">Details</MudText>
+                <MudGrid>
+                    <MudItem xs="6"><MudText Typo="Typo.caption" Color="Color.Secondary">Website</MudText><MudText>@(_company.Website ?? "—")</MudText></MudItem>
+                    <MudItem xs="6"><MudText Typo="Typo.caption" Color="Color.Secondary">Phone</MudText><MudText>@(_company.Phone ?? "—")</MudText></MudItem>
+                    <MudItem xs="12"><MudText Typo="Typo.caption" Color="Color.Secondary">Address</MudText><MudText>@(_company.Address ?? "—"), @_company.City, @_company.State @_company.Zip</MudText></MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            @if (_company.Contacts.Any())
+            {
+                <MudPaper Elevation="0" Class="pa-4 mb-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+                    <MudText Typo="Typo.h6" Class="mb-3">Contacts (@_company.Contacts.Count)</MudText>
+                    <MudSimpleTable Dense="true" Hover="true">
+                        <thead><tr><th>Name</th><th>Title</th><th>Email</th></tr></thead>
+                        <tbody>
+                            @foreach (var c in _company.Contacts)
+                            {
+                                <tr style="cursor: pointer;" @onclick='() => Navigation.NavigateTo("/contacts/" + c.Id)'>
+                                    <td>@c.FirstName @c.LastName</td><td>@c.Title</td><td>@c.Email</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                </MudPaper>
+            }
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            @if (_company.Deals.Any())
+            {
+                <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+                    <MudText Typo="Typo.h6" Class="mb-3">Deals (@_company.Deals.Count)</MudText>
+                    @foreach (var deal in _company.Deals)
+                    {
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" FullWidth="true"
+                                   Href="@($"/deals/{deal.Id}")" Style="justify-content: flex-start; text-transform: none;">
+                            @deal.Title — @deal.Value.ToString("C0") (@deal.Stage)
+                        </MudButton>
+                    }
+                </MudPaper>
+            }
+        </MudItem>
+    </MudGrid>
+}
+else
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private CompanyDetailDto? _company;
+
+    protected override async Task OnInitializedAsync() { _company = await CompanyService.GetByIdAsync(Id); }
+
+    private async Task Delete()
+    {
+        var parameters = new DialogParameters<ConfirmDialog> { { x => x.Message, $"Delete {_company?.Name}?" } };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirm Delete", parameters);
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled)
+        {
+            await CompanyService.DeleteAsync(Id);
+            Snackbar.Add("Company deleted.", Severity.Success);
+            Navigation.NavigateTo("/companies");
+        }
+    }
+}
