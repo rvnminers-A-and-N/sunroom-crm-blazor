@@ -1,0 +1,65 @@
+@page "/settings/profile"
+@attribute [Authorize]
+@using SunroomCrm.Shared.DTOs.Auth
+@rendermode InteractiveServer
+@inject IAuthService AuthService
+@inject IUserService UserService
+@inject ISnackbar Snackbar
+
+<PageTitle>Profile Settings — Sunroom CRM</PageTitle>
+
+<PageHeader Title="Profile Settings" Subtitle="Manage your account" />
+
+@if (_user != null)
+{
+    <MudPaper Elevation="0" Class="pa-6" Style="max-width: 600px; border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_name" Label="Name" Variant="Variant.Outlined" FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_email" Label="Email" Variant="Variant.Outlined" FullWidth="true" InputType="InputType.Email" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_password" Label="New Password (leave blank to keep)" Variant="Variant.Outlined" FullWidth="true" InputType="InputType.Password" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="@_saving">
+                    @if (_saving) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+                    Save Changes
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+}
+else { <MudProgressLinear Indeterminate="true" Color="Color.Primary" /> }
+
+@code {
+    private UserDto? _user;
+    private string _name = string.Empty;
+    private string _email = string.Empty;
+    private string? _password;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = await AuthService.GetCurrentUserAsync();
+        _name = _user.Name;
+        _email = _user.Email;
+    }
+
+    private async Task Save()
+    {
+        _saving = true;
+        try
+        {
+            var request = new UpdateUserRequest { Name = _name, Email = _email };
+            if (!string.IsNullOrWhiteSpace(_password)) request.Password = _password;
+            await UserService.UpdateAsync(_user!.Id, request);
+            Snackbar.Add("Profile updated!", Severity.Success);
+            _password = null;
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally { _saving = false; }
+    }
+}
