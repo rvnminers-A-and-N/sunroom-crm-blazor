@@ -1,0 +1,9 @@
+@using SunroomCrm.Shared.DTOs.Tags
+
+<span class="tag-chip" style="background: @(Tag.Color + "20"); color: @Tag.Color;">
+    @Tag.Name
+</span>
+
+@code {
+    [Parameter, EditorRequired] public TagDto Tag { get; set; } = null!;
+}

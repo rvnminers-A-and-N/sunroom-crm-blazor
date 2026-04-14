@@ -1,0 +1,18 @@
+<div class="empty-state">
+    <div class="empty-icon">
+        <MudIcon Icon="@Icon" Style="font-size: 3rem;" Color="Color.Default" />
+    </div>
+    <div class="empty-title">@Title</div>
+    <div class="empty-description">@Description</div>
+    @if (Actions != null)
+    {
+        <div class="mt-4">@Actions</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.Inbox;
+    [Parameter] public string Title { get; set; } = "No data";
+    [Parameter] public string Description { get; set; } = string.Empty;
+    [Parameter] public RenderFragment? Actions { get; set; }
+}
