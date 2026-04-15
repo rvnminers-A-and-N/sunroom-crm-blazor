@@ -26,6 +26,7 @@ public class ActivitiesTests
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         var tableRows = page.Locator("table tbody tr");
+        await tableRows.First.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         (await tableRows.CountAsync()).Should().BeGreaterThan(0);
     }
 
@@ -55,9 +56,11 @@ public class ActivitiesTests
         await page.WaitForURLAsync("**/activities**");
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        await page.GetByRole(AriaRole.Button, new() { Name = "New Activity" }).ClickAsync();
+        var createBtn = page.GetByRole(AriaRole.Button, new() { Name = "New Activity" });
+        await createBtn.EvaluateAsync("el => el.click()");
 
         var dialog = page.GetByRole(AriaRole.Dialog);
+        await dialog.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
         (await dialog.IsVisibleAsync()).Should().BeTrue();
     }
 

@@ -23,9 +23,9 @@ public class DealsTests
 
         await page.GetByRole(AriaRole.Link, new() { Name = "Deals" }).First.ClickAsync();
         await page.WaitForURLAsync("**/deals**");
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         var tableRows = page.Locator("table tbody tr");
+        await tableRows.First.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         (await tableRows.CountAsync()).Should().BeGreaterThan(0);
     }
 
@@ -55,9 +55,11 @@ public class DealsTests
         await page.WaitForURLAsync("**/deals**");
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        await page.GetByRole(AriaRole.Button, new() { Name = "New Deal" }).ClickAsync();
+        var createBtn = page.GetByRole(AriaRole.Button, new() { Name = "New Deal" });
+        await createBtn.EvaluateAsync("el => el.click()");
 
         var dialog = page.GetByRole(AriaRole.Dialog);
+        await dialog.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
         (await dialog.IsVisibleAsync()).Should().BeTrue();
     }
 
@@ -88,9 +90,11 @@ public class DealsTests
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         var firstRow = page.Locator("table tbody tr").First;
-        await firstRow.ClickAsync();
+        await firstRow.EvaluateAsync("el => el.click()");
 
-        await page.WaitForURLAsync("**/deals/**");
+        // Blazor client-side navigation via pushState — poll URL
+        await page.WaitForFunctionAsync("() => /\\/deals\\/\\d+/.test(location.href)",
+            new PageWaitForFunctionOptions { Timeout = 10000 });
         page.Url.Should().MatchRegex(@"/deals/\d+");
     }
 }

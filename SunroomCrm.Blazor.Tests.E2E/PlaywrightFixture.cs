@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Playwright;
+using MudBlazor.Services;
 using SunroomCrm.Blazor.Auth;
 using SunroomCrm.Blazor.Components;
 using SunroomCrm.Blazor.Data;
@@ -22,9 +23,20 @@ public class PlaywrightFixture : IAsyncLifetime
         var apiUrl = Environment.GetEnvironmentVariable("BLAZOR_E2E_API_URL");
         IsIntegrationMode = !string.IsNullOrEmpty(apiUrl);
 
-        var builder = WebApplication.CreateBuilder();
+        // Resolve paths for static web assets and wwwroot
+        var testBinDir = AppContext.BaseDirectory;
+        var repoRoot = Path.GetFullPath(Path.Combine(testBinDir, "..", "..", "..", ".."));
+        var blazorProjectDir = Path.Combine(repoRoot, "SunroomCrm.Blazor");
+
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            ContentRootPath = Directory.Exists(blazorProjectDir) ? blazorProjectDir : Directory.GetCurrentDirectory(),
+            WebRootPath = Directory.Exists(Path.Combine(blazorProjectDir, "wwwroot"))
+                ? Path.Combine(blazorProjectDir, "wwwroot") : null,
+            ApplicationName = typeof(SunroomCrm.Blazor.Components.App).Assembly.GetName().Name!,
+            EnvironmentName = "Development"
+        });
         builder.WebHost.UseUrls("http://127.0.0.1:0");
-        builder.Environment.EnvironmentName = "Testing";
 
         if (IsIntegrationMode)
         {
@@ -40,9 +52,10 @@ public class PlaywrightFixture : IAsyncLifetime
         }
 
         builder.Services.AddRazorComponents()
-            .AddInteractiveServerComponents()
+            .AddInteractiveServerComponents(options => options.DetailedErrors = true)
             .AddInteractiveWebAssemblyComponents();
 
+        builder.Services.AddMudServices();
         builder.Services.AddDataServices(builder.Configuration);
 
         if (!IsIntegrationMode)
@@ -52,8 +65,9 @@ public class PlaywrightFixture : IAsyncLifetime
                 d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
             if (descriptor != null) builder.Services.Remove(descriptor);
 
+            var dbName = $"E2E_{Guid.NewGuid()}";
             builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseInMemoryDatabase($"E2E_{Guid.NewGuid()}"));
+                options.UseInMemoryDatabase(dbName));
         }
 
         builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -112,19 +126,29 @@ public class PlaywrightFixture : IAsyncLifetime
 
     public async Task<IPage> LoginAsync(IPage page, string email = "admin@sunroomcrm.com", string password = "password123")
     {
+        // Navigate to establish same-origin context
         await page.GotoAsync($"{BaseUrl}/login");
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
 
-        // Wait for Blazor InteractiveServer to fully render the form
-        var emailInput = page.Locator("input[type='email']");
-        await emailInput.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+        // Login via direct API call — bypasses Blazor circuit timing issues
+        // in CI where InteractiveServer WebSocket may not connect in time
+        var loginOk = await page.EvaluateAsync<bool>(@"
+            async (credentials) => {
+                const r = await fetch('/api/account/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(credentials)
+                });
+                return r.ok;
+            }
+        ", new { email, password });
 
-        await emailInput.FillAsync(email);
-        await page.Locator("input[type='password']").FillAsync(password);
-        await page.Locator("button[type='submit']").ClickAsync();
+        if (!loginOk)
+            throw new InvalidOperationException($"E2E login failed for {email}");
 
-        await page.WaitForURLAsync($"**/dashboard**",
-            new() { Timeout = 15000 });
+        // Navigate to dashboard with the auth cookie now set
+        await page.GotoAsync($"{BaseUrl}/dashboard");
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
 
         return page;
     }

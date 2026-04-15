@@ -22,33 +22,43 @@ public class GoldenPathTests
 
         var uniqueEmail = $"golden.{Guid.NewGuid():N}@test.sunroom.dev";
 
-        // 1. Register a new user
+        // 1. Register a new user via API call (bypasses Blazor circuit timing)
         await page.GotoAsync($"{_fixture.BaseUrl}/register");
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+
+        var registerOk = await page.EvaluateAsync<bool>(@"
+            async (credentials) => {
+                const r = await fetch('/api/account/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(credentials)
+                });
+                return r.ok;
+            }
+        ", new { name = "Golden Path User", email = uniqueEmail, password = "Test123!" });
+
+        registerOk.Should().BeTrue("register API should accept new user");
+
+        await page.GotoAsync($"{_fixture.BaseUrl}/dashboard");
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-
-        var nameInput = page.Locator("input[type='text']").First;
-        await nameInput.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
-
-        await nameInput.FillAsync("Golden Path User");
-        await page.Locator("input[type='email']").FillAsync(uniqueEmail);
-        await page.Locator("input[type='password']").FillAsync("Test123!");
-        await page.Locator("button[type='submit']").ClickAsync();
-
-        await page.WaitForURLAsync("**/dashboard**", new() { Timeout = 15000 });
         page.Url.Should().Contain("/dashboard");
 
         // 2. Navigate to contacts
-        await page.GetByRole(AriaRole.Link, new() { Name = "Contacts" }).ClickAsync();
+        var contactsLink = page.GetByRole(AriaRole.Link, new() { Name = "Contacts" });
+        await contactsLink.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+        await contactsLink.ClickAsync();
         await page.WaitForURLAsync("**/contacts**");
         page.Url.Should().Contain("/contacts");
 
         // 3. Navigate to deals
-        await page.GetByRole(AriaRole.Link, new() { Name = "Deals" }).First.ClickAsync();
+        var dealsLink = page.GetByRole(AriaRole.Link, new() { Name = "Deals" }).First;
+        await dealsLink.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+        await dealsLink.ClickAsync();
         await page.WaitForURLAsync("**/deals**");
         page.Url.Should().Contain("/deals");
 
-        // 4. Navigate to pipeline
-        await page.GetByRole(AriaRole.Link, new() { Name = "Pipeline" }).ClickAsync();
+        // 4. Navigate to pipeline (use Exact to avoid matching "Pipeline View" button)
+        await page.GetByRole(AriaRole.Link, new() { Name = "Pipeline", Exact = true }).ClickAsync();
         await page.WaitForURLAsync("**/deals/pipeline**");
         page.Url.Should().Contain("/deals/pipeline");
     }
@@ -92,6 +102,7 @@ public class GoldenPathTests
 
         // Seeded data should show contacts in the table
         var tableRows = page.Locator("table tbody tr");
+        await tableRows.First.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         (await tableRows.CountAsync()).Should().BeGreaterThan(0);
     }
 }

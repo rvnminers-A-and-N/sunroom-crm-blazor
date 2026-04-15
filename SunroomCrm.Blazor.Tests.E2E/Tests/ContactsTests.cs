@@ -26,6 +26,7 @@ public class ContactsTests
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         var tableRows = page.Locator("table tbody tr");
+        await tableRows.First.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         (await tableRows.CountAsync()).Should().BeGreaterThan(0);
     }
 
@@ -70,9 +71,11 @@ public class ContactsTests
         await page.WaitForURLAsync("**/contacts**");
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        await page.GetByRole(AriaRole.Button, new() { Name = "New Contact" }).ClickAsync();
+        var createBtn = page.GetByRole(AriaRole.Button, new() { Name = "New Contact" });
+        await createBtn.EvaluateAsync("el => el.click()");
 
         var dialog = page.GetByRole(AriaRole.Dialog);
+        await dialog.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
         (await dialog.IsVisibleAsync()).Should().BeTrue();
     }
 
@@ -88,9 +91,11 @@ public class ContactsTests
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         var firstRow = page.Locator("table tbody tr").First;
-        await firstRow.ClickAsync();
+        await firstRow.EvaluateAsync("el => el.click()");
 
-        await page.WaitForURLAsync("**/contacts/**");
+        // Blazor client-side navigation via pushState — poll URL
+        await page.WaitForFunctionAsync("() => /\\/contacts\\/\\d+/.test(location.href)",
+            new PageWaitForFunctionOptions { Timeout = 10000 });
         page.Url.Should().MatchRegex(@"/contacts/\d+");
     }
 }

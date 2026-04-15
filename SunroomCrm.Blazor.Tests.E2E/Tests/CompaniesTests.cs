@@ -26,6 +26,7 @@ public class CompaniesTests
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         var tableRows = page.Locator("table tbody tr");
+        await tableRows.First.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
         (await tableRows.CountAsync()).Should().BeGreaterThan(0);
     }
 
@@ -70,9 +71,11 @@ public class CompaniesTests
         await page.WaitForURLAsync("**/companies**");
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        await page.GetByRole(AriaRole.Button, new() { Name = "New Company" }).ClickAsync();
+        var createBtn = page.GetByRole(AriaRole.Button, new() { Name = "New Company" });
+        await createBtn.EvaluateAsync("el => el.click()");
 
         var dialog = page.GetByRole(AriaRole.Dialog);
+        await dialog.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 5000 });
         (await dialog.IsVisibleAsync()).Should().BeTrue();
     }
 
@@ -88,9 +91,11 @@ public class CompaniesTests
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         var firstRow = page.Locator("table tbody tr").First;
-        await firstRow.ClickAsync();
+        await firstRow.EvaluateAsync("el => el.click()");
 
-        await page.WaitForURLAsync("**/companies/**");
+        // Blazor client-side navigation via pushState — poll URL
+        await page.WaitForFunctionAsync("() => /\\/companies\\/\\d+/.test(location.href)",
+            new PageWaitForFunctionOptions { Timeout = 10000 });
         page.Url.Should().MatchRegex(@"/companies/\d+");
     }
 }
