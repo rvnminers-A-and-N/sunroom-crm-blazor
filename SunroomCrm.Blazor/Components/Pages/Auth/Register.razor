@@ -1,6 +1,7 @@
 @page "/register"
 @using SunroomCrm.Shared.DTOs.Auth
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 <PageTitle>Register — Sunroom CRM</PageTitle>
 
@@ -95,17 +96,15 @@
 
         try
         {
-            var http = new HttpClient { BaseAddress = new Uri(Navigation.BaseUri) };
-            var response = await http.PostAsJsonAsync("/api/account/register", _model);
+            var ok = await JS.InvokeAsync<bool>("postRegister", _model.Name, _model.Email, _model.Password);
 
-            if (response.IsSuccessStatusCode)
+            if (ok)
             {
                 Navigation.NavigateTo("/dashboard", forceLoad: true);
             }
             else
             {
-                var error = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-                _error = error?.GetValueOrDefault("message") ?? "Registration failed.";
+                _error = "Registration failed. Email may already be in use.";
             }
         }
         catch
