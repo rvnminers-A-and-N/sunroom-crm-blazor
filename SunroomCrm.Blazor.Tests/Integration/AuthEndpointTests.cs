@@ -57,7 +57,7 @@ public class AuthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
         var client = CreateClient();
         var response = await client.PostAsJsonAsync("/api/account/login", new LoginRequest
         {
-            Email = "admin@sunroomcrm.com",
+            Email = "admin@sunroomcrm.net",
             Password = "password123"
         });
 
@@ -71,7 +71,7 @@ public class AuthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
         var client = CreateClient();
         var response = await client.PostAsJsonAsync("/api/account/login", new LoginRequest
         {
-            Email = "admin@sunroomcrm.com",
+            Email = "admin@sunroomcrm.net",
             Password = "wrongpassword"
         });
 

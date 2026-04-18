@@ -33,7 +33,7 @@ public class AuthFlowTests
                 });
                 return r.ok;
             }
-        ", new { email = "admin@sunroomcrm.com", password = "password123" });
+        ", new { email = "admin@sunroomcrm.net", password = "password123" });
 
         loginOk.Should().BeTrue("login API should accept valid credentials");
 
