@@ -31,6 +31,30 @@ public class LocalAiService : IAiService
         return Task.FromResult(new SummarizeResponse { Summary = $"Summary: {summary}" });
     }
 
+    public async IAsyncEnumerable<string> SummarizeStreamAsync(
+        SummarizeRequest request, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var result = await SummarizeAsync(request);
+        foreach (var word in result.Summary.Split(' '))
+        {
+            ct.ThrowIfCancellationRequested();
+            yield return word + " ";
+            await Task.Delay(20, ct);
+        }
+    }
+
+    public async IAsyncEnumerable<string> SmartSearchStreamAsync(
+        string query, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var placeholder = $"Searching for '{query}' across your contacts, deals, and activities. Found several relevant matches based on your query.";
+        foreach (var word in placeholder.Split(' '))
+        {
+            ct.ThrowIfCancellationRequested();
+            yield return word + " ";
+            await Task.Delay(20, ct);
+        }
+    }
+
     public async Task<SmartSearchResponse> SmartSearchAsync(SmartSearchRequest request)
     {
         var userId = GetCurrentUserId();
@@ -128,6 +152,18 @@ public class LocalAiService : IAiService
             Insight = insight.Insight,
             GeneratedAt = insight.GeneratedAt
         };
+    }
+
+    public async IAsyncEnumerable<string> DealInsightsStreamAsync(
+        int dealId, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var placeholder = $"Analyzing deal {dealId}. This deal shows strong engagement with multiple touchpoints. Recommendation: continue nurturing the relationship and schedule a follow-up.";
+        foreach (var word in placeholder.Split(' '))
+        {
+            ct.ThrowIfCancellationRequested();
+            yield return word + " ";
+            await Task.Delay(20, ct);
+        }
     }
 
     private int GetCurrentUserId()

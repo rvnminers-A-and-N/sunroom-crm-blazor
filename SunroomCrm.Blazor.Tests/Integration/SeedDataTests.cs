@@ -39,7 +39,7 @@ public class SeedDataTests
 
         await SeedData.SeedAsync(db);
 
-        var admin = db.Users.First(u => u.Email == "admin@sunroomcrm.com");
+        var admin = db.Users.First(u => u.Email == "admin@sunroomcrm.net");
         BCrypt.Net.BCrypt.Verify("password123", admin.Password).Should().BeTrue();
     }
 }
