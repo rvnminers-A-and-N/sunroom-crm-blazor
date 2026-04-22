@@ -124,7 +124,7 @@ public class PlaywrightFixture : IAsyncLifetime
         });
     }
 
-    public async Task<IPage> LoginAsync(IPage page, string email = "admin@sunroomcrm.com", string password = "password123")
+    public async Task<IPage> LoginAsync(IPage page, string email = "admin@sunroomcrm.net", string password = "password123")
     {
         // Navigate to establish same-origin context
         await page.GotoAsync($"{BaseUrl}/login");
