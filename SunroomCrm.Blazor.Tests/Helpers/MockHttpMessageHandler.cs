@@ -25,6 +25,24 @@ public class MockHttpMessageHandler : HttpMessageHandler
         _responses[url] = new HttpResponseMessage(statusCode);
     }
 
+    public void SetupSseResponse(string url, string[] tokens, HttpStatusCode statusCode = HttpStatusCode.OK)
+    {
+        var lines = string.Join("", tokens.Select(t => $"data: {{\"token\":\"{t}\"}}\n\n"));
+        lines += "data: [DONE]\n\n";
+        SetupRawSseResponse(url, lines, statusCode);
+    }
+
+    public void SetupRawSseResponse(string url, string rawBody, HttpStatusCode statusCode = HttpStatusCode.OK)
+    {
+        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(rawBody));
+        _responses[url] = new HttpResponseMessage(statusCode)
+        {
+            Content = new StreamContent(stream)
+        };
+        _responses[url].Content.Headers.ContentType =
+            new System.Net.Http.Headers.MediaTypeHeaderValue("text/event-stream");
+    }
+
     protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {

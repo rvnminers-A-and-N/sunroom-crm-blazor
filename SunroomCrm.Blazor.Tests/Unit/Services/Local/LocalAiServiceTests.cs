@@ -138,4 +138,70 @@ public class LocalAiServiceTests
         var act = () => service.SmartSearchAsync(new SmartSearchRequest { Query = "test" });
         await act.Should().ThrowAsync<UnauthorizedAccessException>();
     }
+
+    [Fact]
+    public async Task SummarizeStreamAsync_YieldsWords()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalAiService(db, MockHttpContextAccessor.Create());
+
+        var tokens = new List<string>();
+        await foreach (var token in service.SummarizeStreamAsync(new SummarizeRequest { Text = "Short text" }))
+        {
+            tokens.Add(token);
+        }
+
+        var combined = string.Join("", tokens).Trim();
+        combined.Should().Be("Summary: Short text");
+    }
+
+    [Fact]
+    public async Task SmartSearchStreamAsync_YieldsWords()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalAiService(db, MockHttpContextAccessor.Create());
+
+        var tokens = new List<string>();
+        await foreach (var token in service.SmartSearchStreamAsync("test"))
+        {
+            tokens.Add(token);
+        }
+
+        var combined = string.Join("", tokens).Trim();
+        combined.Should().Contain("test");
+    }
+
+    [Fact]
+    public async Task DealInsightsStreamAsync_YieldsWords()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalAiService(db, MockHttpContextAccessor.Create());
+
+        var tokens = new List<string>();
+        await foreach (var token in service.DealInsightsStreamAsync(1))
+        {
+            tokens.Add(token);
+        }
+
+        var combined = string.Join("", tokens).Trim();
+        combined.Should().Contain("deal 1");
+    }
+
+    [Fact]
+    public async Task SummarizeStreamAsync_RespectsCancellation()
+    {
+        var db = TestDbContextFactory.Create();
+        var service = new LocalAiService(db, MockHttpContextAccessor.Create());
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var act = async () =>
+        {
+            await foreach (var _ in service.SummarizeStreamAsync(
+                new SummarizeRequest { Text = "test" }, cts.Token))
+            { }
+        };
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
 }

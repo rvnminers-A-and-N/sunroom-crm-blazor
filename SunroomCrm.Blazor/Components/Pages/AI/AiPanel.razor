@@ -19,9 +19,12 @@
                 @if (_summarizing) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
                 Summarize
             </MudButton>
-            @if (!string.IsNullOrEmpty(_summaryResult))
+            @if (!string.IsNullOrEmpty(_summaryResult) || _summarizing)
             {
-                <MudAlert Severity="Severity.Info" Class="mt-3">@_summaryResult</MudAlert>
+                <MudAlert Severity="Severity.Info" Class="mt-3">
+                    @_summaryResult
+                    @if (_summarizing) { <span style="display:inline-block;width:2px;height:1em;background:var(--mud-palette-primary);margin-left:2px;vertical-align:text-bottom;animation:blink .8s step-end infinite;" /> }
+                </MudAlert>
             }
         </MudPaper>
     </MudItem>
@@ -35,10 +38,33 @@
                 @if (_searching) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
                 Search
             </MudButton>
-            @if (_searchResponse != null)
+            @if (!string.IsNullOrEmpty(_searchResult) || _searching)
             {
-                <MudAlert Severity="Severity.Info" Class="mt-3">@_searchResponse.Interpretation</MudAlert>
-                <MudText Typo="Typo.body2" Class="mt-2">Found @_searchResponse.Contacts.Count contacts, @_searchResponse.Activities.Count activities</MudText>
+                <MudAlert Severity="Severity.Info" Class="mt-3">
+                    @_searchResult
+                    @if (_searching) { <span style="display:inline-block;width:2px;height:1em;background:var(--mud-palette-primary);margin-left:2px;vertical-align:text-bottom;animation:blink .8s step-end infinite;" /> }
+                </MudAlert>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+<MudGrid Class="mt-4">
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="0" Class="pa-4" Style="border: 1px solid var(--sunroom-gray-200); border-radius: 12px;">
+            <MudText Typo="Typo.h6" Class="mb-3">Deal Insights</MudText>
+            <MudTextField @bind-Value="_dealIdInput" Label="Enter Deal ID" Variant="Variant.Outlined" InputType="InputType.Number" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="GenerateDealInsights"
+                       Disabled="@(_dealIdInput <= 0 || _generatingInsights)">
+                @if (_generatingInsights) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+                Generate Insights
+            </MudButton>
+            @if (!string.IsNullOrEmpty(_insightsResult) || _generatingInsights)
+            {
+                <MudAlert Severity="Severity.Info" Class="mt-3">
+                    @_insightsResult
+                    @if (_generatingInsights) { <span style="display:inline-block;width:2px;height:1em;background:var(--mud-palette-primary);margin-left:2px;vertical-align:text-bottom;animation:blink .8s step-end infinite;" /> }
+                </MudAlert>
             }
         </MudPaper>
     </MudItem>
@@ -49,29 +75,78 @@
     private string? _summaryResult;
     private bool _summarizing;
     private string? _searchQuery;
-    private SmartSearchResponse? _searchResponse;
+    private string? _searchResult;
     private bool _searching;
+    private int _dealIdInput;
+    private string? _insightsResult;
+    private bool _generatingInsights;
+
+    private Timer? _renderTimer;
 
     private async Task Summarize()
     {
         _summarizing = true;
+        _summaryResult = "";
+        _renderTimer = new Timer(_ => InvokeAsync(StateHasChanged), null, 0, 100);
+
         try
         {
-            var result = await AiService.SummarizeAsync(new SummarizeRequest { Text = _summarizeText! });
-            _summaryResult = result.Summary;
+            await foreach (var token in AiService.SummarizeStreamAsync(
+                new SummarizeRequest { Text = _summarizeText! }))
+            {
+                _summaryResult += token;
+            }
         }
         catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
-        finally { _summarizing = false; }
+        finally
+        {
+            _renderTimer?.Dispose();
+            _summarizing = false;
+            StateHasChanged();
+        }
     }
 
     private async Task SmartSearch()
     {
         _searching = true;
+        _searchResult = "";
+        _renderTimer = new Timer(_ => InvokeAsync(StateHasChanged), null, 0, 100);
+
         try
         {
-            _searchResponse = await AiService.SmartSearchAsync(new SmartSearchRequest { Query = _searchQuery! });
+            await foreach (var token in AiService.SmartSearchStreamAsync(_searchQuery!))
+            {
+                _searchResult += token;
+            }
         }
         catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
-        finally { _searching = false; }
+        finally
+        {
+            _renderTimer?.Dispose();
+            _searching = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GenerateDealInsights()
+    {
+        _generatingInsights = true;
+        _insightsResult = "";
+        _renderTimer = new Timer(_ => InvokeAsync(StateHasChanged), null, 0, 100);
+
+        try
+        {
+            await foreach (var token in AiService.DealInsightsStreamAsync(_dealIdInput))
+            {
+                _insightsResult += token;
+            }
+        }
+        catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        finally
+        {
+            _renderTimer?.Dispose();
+            _generatingInsights = false;
+            StateHasChanged();
+        }
     }
 }

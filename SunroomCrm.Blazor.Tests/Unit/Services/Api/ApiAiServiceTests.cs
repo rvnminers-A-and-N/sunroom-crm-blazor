@@ -70,4 +70,69 @@ public class ApiAiServiceTests
 
         result.Insight.Should().Be("Generated insight.");
     }
+
+    [Fact]
+    public async Task SummarizeStreamAsync_YieldsTokens()
+    {
+        var (service, handler) = CreateService();
+        handler.SetupSseResponse("/api/ai/summarize/stream", ["Hello", " world"]);
+
+        var tokens = new List<string>();
+        await foreach (var token in service.SummarizeStreamAsync(new SummarizeRequest { Text = "test" }))
+        {
+            tokens.Add(token);
+        }
+
+        tokens.Should().Equal("Hello", " world");
+    }
+
+    [Fact]
+    public async Task SmartSearchStreamAsync_YieldsTokens()
+    {
+        var (service, handler) = CreateService();
+        handler.SetupSseResponse("/api/ai/search/stream", ["Found", " results"]);
+
+        var tokens = new List<string>();
+        await foreach (var token in service.SmartSearchStreamAsync("test query"))
+        {
+            tokens.Add(token);
+        }
+
+        tokens.Should().Equal("Found", " results");
+    }
+
+    [Fact]
+    public async Task DealInsightsStreamAsync_YieldsTokens()
+    {
+        var (service, handler) = CreateService();
+        handler.SetupSseResponse("/api/ai/deal-insights/1/stream", ["Deal", " insight"]);
+
+        var tokens = new List<string>();
+        await foreach (var token in service.DealInsightsStreamAsync(1))
+        {
+            tokens.Add(token);
+        }
+
+        tokens.Should().Equal("Deal", " insight");
+    }
+
+    [Fact]
+    public async Task SummarizeStreamAsync_SkipsInvalidJsonAndEmptyTokens()
+    {
+        var (service, handler) = CreateService();
+        // Include: invalid JSON, empty token, valid token, then DONE
+        var raw = "data: not-json\n\n" +
+                  "data: {\"token\":\"\"}\n\n" +
+                  "data: {\"token\":\"valid\"}\n\n" +
+                  "data: [DONE]\n\n";
+        handler.SetupRawSseResponse("/api/ai/summarize/stream", raw);
+
+        var tokens = new List<string>();
+        await foreach (var token in service.SummarizeStreamAsync(new SummarizeRequest { Text = "x" }))
+        {
+            tokens.Add(token);
+        }
+
+        tokens.Should().Equal("valid");
+    }
 }
