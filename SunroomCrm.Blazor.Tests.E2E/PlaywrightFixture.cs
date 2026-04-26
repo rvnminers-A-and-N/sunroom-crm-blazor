@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Playwright;
@@ -132,19 +133,35 @@ public class PlaywrightFixture : IAsyncLifetime
 
         // Login via direct API call — bypasses Blazor circuit timing issues
         // in CI where InteractiveServer WebSocket may not connect in time
-        var loginOk = await page.EvaluateAsync<bool>(@"
+        var result = await page.EvaluateAsync<JsonElement>(@"
             async (credentials) => {
-                const r = await fetch('/api/account/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(credentials)
-                });
-                return r.ok;
+                try {
+                    const r = await fetch('/api/account/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(credentials)
+                    });
+                    const body = await r.text();
+                    return { ok: r.ok, status: r.status, body: body.substring(0, 500), error: null };
+                } catch (e) {
+                    return { ok: false, status: 0, body: '', error: e.message };
+                }
             }
         ", new { email, password });
 
-        if (!loginOk)
-            throw new InvalidOperationException($"E2E login failed for {email}");
+        var ok = result.GetProperty("ok").GetBoolean();
+        if (!ok)
+        {
+            var status = result.GetProperty("status").GetInt32();
+            var body = result.GetProperty("body").GetString() ?? "";
+            var error = result.GetProperty("error").GetString();
+            var detail = error != null
+                ? $"fetch threw: {error}"
+                : $"status={status}, body={body}";
+            var apiUrl = Environment.GetEnvironmentVariable("BLAZOR_E2E_API_URL") ?? "<local>";
+            throw new InvalidOperationException(
+                $"E2E login failed for {email} (apiUrl={apiUrl}): {detail}");
+        }
 
         // Navigate to dashboard with the auth cookie now set
         await page.GotoAsync($"{BaseUrl}/dashboard");
